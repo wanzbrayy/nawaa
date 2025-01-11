@@ -3,34 +3,29 @@ const axios = require('axios');
 const path = require('path');
 const app = express();
 const port = 8080;
-
-// API Key untuk layanan Virtual SIM
 const API_KEY = 'hVEqoxiPzKO3c9MkRGp4uSYI8FlNZB'; // Ganti dengan API Key yang diberikan
-
-// Middleware untuk menghandle JSON request
 app.use(express.json());
-app.use(express.static(path.join(__dirname)));  // Menyajikan file statis seperti HTML, JS, CSS
-
-// Endpoint untuk membuat nomor virtual SIM
+app.use(express.static(path.join(__dirname)));
 app.post('/create-sim', async (req, res) => {
     try {
+        // Ganti 'country' menjadi 'ID' untuk Indonesia
         const response = await axios.post('https://virtusim.com/api/json.php', {
             api_key: API_KEY,
             action: 'create_number',
-            country: 'US'
+            country: 'ID' // Menggunakan kode negara Indonesia
         });
 
         console.log('API Response:', response.data);  // Debugging: Log response dari API
 
-        if (response.data.success) {
+        if (response.data.status) {
             res.status(200).json({
                 success: true,
-                number: response.data.number // Pastikan number ada di dalam response
+                number: response.data.data.number // Mengambil nomor dari response yang benar
             });
         } else {
             res.status(400).json({
                 success: false,
-                message: response.data.message || 'Failed to create SIM.'
+                message: response.data.data.msg || 'Failed to create SIM.'
             });
         }
     } catch (error) {
@@ -56,10 +51,10 @@ app.get('/check-sms/:number', async (req, res) => {
 
         console.log('Check SMS Response:', response.data); // Debugging: Log response dari API
 
-        if (response.data.success && response.data.sms_received) {
+        if (response.data.status && response.data.data.sms_received) {
             res.status(200).json({
                 smsReceived: true,
-                smsCode: response.data.sms_code
+                smsCode: response.data.data.sms_code
             });
         } else {
             res.status(200).json({
