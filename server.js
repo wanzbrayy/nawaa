@@ -1,58 +1,77 @@
 const express = require('express');
 const axios = require('axios');
 const path = require('path');
-
 const app = express();
 const port = 8080;
 
 // API Key untuk layanan Virtual SIM
-const API_KEY = 'hVEqoxiPzKO3c9MkRGp4uSYI8FlNZB'; // API Key yang valid
+const API_KEY = 'hVEqoxiPzKO3c9MkRGp4uSYI8FlNZB'; // Ganti dengan API Key yang diberikan
 
-// Middleware untuk meng-handle JSON dan file statis
+// Middleware untuk menghandle JSON request
 app.use(express.json());
-app.use(express.static(path.join(__dirname)));
+app.use(express.static(path.join(__dirname)));  // Menyajikan file statis seperti HTML, JS, CSS
 
-// Endpoint untuk halaman utama
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// Endpoint untuk membuat Virtual SIM
-app.post('/api/virtualsim/create', async (req, res) => {
+// Endpoint untuk membuat nomor virtual SIM
+app.post('/create-sim', async (req, res) => {
     try {
-        // Kirim permintaan ke API Virtual SIM
         const response = await axios.post('https://virtusim.com/api/json.php', {
-            api_key: API_KEY, // API Key
-            action: 'create_number', // Aksi yang diminta
-            country: req.body.country || 'US', // Negara (default ke US jika tidak diberikan)
+            api_key: API_KEY,
+            action: 'create_number',
+            country: 'US'
         });
 
-        console.log('API Response:', response.data); // Log respons API untuk debugging
-
-        // Cek apakah respons berhasil
         if (response.data.success) {
             res.status(200).json({
                 success: true,
-                number: response.data.number, // Nomor virtual yang dibuat
-                message: response.data.message || 'Virtual SIM created successfully!',
+                number: response.data.number
             });
         } else {
             res.status(400).json({
                 success: false,
-                message: response.data.message || 'Failed to create Virtual SIM.',
+                message: response.data.message || 'Failed to create SIM.'
             });
         }
     } catch (error) {
-        console.error('Error:', error.response ? error.response.data : error.message);
         res.status(500).json({
             success: false,
-            message: 'Failed to create Virtual SIM.',
-            error: error.response ? error.response.data : error.message,
+            message: 'Failed to create SIM.',
+            error: error.response ? error.response.data : error.message
         });
     }
 });
 
-// Jalankan server
+// Endpoint untuk memeriksa SMS berdasarkan nomor virtual
+app.get('/check-sms/:number', async (req, res) => {
+    const { number } = req.params;
+
+    try {
+        const response = await axios.post('https://virtusim.com/api/json.php', {
+            api_key: API_KEY,
+            action: 'check_sms',
+            number: number
+        });
+
+        if (response.data.success && response.data.sms_received) {
+            res.status(200).json({
+                smsReceived: true,
+                smsCode: response.data.sms_code
+            });
+        } else {
+            res.status(200).json({
+                smsReceived: false
+            });
+        }
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to check SMS.',
+            error: error.response ? error.response.data : error.message
+        });
+    }
+});
+
+// Menjalankan server
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });
+            
