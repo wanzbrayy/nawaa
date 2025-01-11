@@ -1,43 +1,43 @@
 const express = require('express');
 const axios = require('axios');
 const path = require('path');
-
 const app = express();
 const port = 8080;
 
 // API Key untuk layanan Virtual SIM
 const API_KEY = '8UAkynwz2f6ION1SVGCbBTFhMDajQr'; // Ganti dengan API Key yang valid
 
-// Middleware untuk menghandle JSON request
+// Middleware untuk meng-handle JSON dan file statis
 app.use(express.json());
-
-// Atur folder statis untuk file HTML, CSS, dan JavaScript
 app.use(express.static(path.join(__dirname)));
 
-// Endpoint untuk melayani halaman utama
+// Endpoint untuk halaman utama
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Endpoint untuk membuat nomor Virtual SIM
+// Endpoint untuk membuat Virtual SIM
 app.post('/api/virtualsim/create', async (req, res) => {
     try {
-        const response = await axios.post('https://api.virtualsimprovider.com/create', {
-            headers: {
-                'Authorization': `Bearer ${API_KEY}`, // Sertakan API Key di header
-                'Content-Type': 'application/json',
-            },
-            data: {
-                service: 'virtualSIM',  // Jenis layanan
-                country: 'US',         // Negara (sesuaikan jika diperlukan)
-            },
+        const { country } = req.body; // Negara yang dipilih pengguna (opsional)
+        const response = await axios.post('https://virtusim.com/api/json.php', {
+            api_key: API_KEY,
+            action: 'create_number', // Action untuk membuat nomor
+            country: country || 'US', // Default ke 'US' jika negara tidak disediakan
         });
 
-        // Respons sukses, kembalikan nomor virtual SIM yang dibuat
-        res.status(200).json({
-            success: true,
-            number: response.data.number, // Nomor virtual SIM yang dibuat
-        });
+        // Jika berhasil, respons akan mengandung nomor virtual
+        if (response.data.success) {
+            res.status(200).json({
+                success: true,
+                number: response.data.number,
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                message: response.data.message || 'Failed to create Virtual SIM.',
+            });
+        }
     } catch (error) {
         console.error('Error creating Virtual SIM:', error.response ? error.response.data : error.message);
         res.status(500).json({
@@ -48,31 +48,33 @@ app.post('/api/virtualsim/create', async (req, res) => {
     }
 });
 
-// Endpoint untuk mengirim SMS
-app.post('/api/virtualsim/sendSMS', async (req, res) => {
-    const { number, message } = req.body; // Dapatkan nomor dan pesan dari request body
+// Endpoint untuk mendapatkan SMS
+app.post('/api/virtualsim/getSMS', async (req, res) => {
+    const { number } = req.body; // Nomor yang ingin dicek pesan masuknya
     try {
-        const response = await axios.post('https://api.virtualsimprovider.com/sendSMS', {
-            headers: {
-                'Authorization': `Bearer ${API_KEY}`,
-                'Content-Type': 'application/json',
-            },
-            data: {
-                to: number,
-                message: message,
-            },
+        const response = await axios.post('https://virtusim.com/api/json.php', {
+            api_key: API_KEY,
+            action: 'get_sms', // Action untuk mendapatkan SMS
+            number: number,
         });
 
-        res.status(200).json({
-            success: true,
-            message: 'SMS sent successfully',
-            response: response.data,
-        });
+        // Jika berhasil, respons akan mengandung pesan SMS
+        if (response.data.success) {
+            res.status(200).json({
+                success: true,
+                messages: response.data.messages, // Daftar pesan yang diterima nomor tersebut
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                message: response.data.message || 'Failed to fetch SMS.',
+            });
+        }
     } catch (error) {
-        console.error('Error sending SMS:', error.response ? error.response.data : error.message);
+        console.error('Error fetching SMS:', error.response ? error.response.data : error.message);
         res.status(500).json({
             success: false,
-            message: 'Failed to send SMS.',
+            message: 'Failed to fetch SMS.',
             error: error.response ? error.response.data : error.message,
         });
     }
