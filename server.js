@@ -1,38 +1,49 @@
 const express = require('express');
 const axios = require('axios');
+const bodyParser = require('body-parser');
 const path = require('path');
 const app = express();
 const port = 8080;
 
-// API Key untuk layanan Virtual SIM
-const API_KEY = 'hVEqoxiPzKO3c9MkRGp4uSYI8FlNZB'; // Ganti dengan API Key yang diberikan
+// API Key dan URL dari virtusim
+const API_KEY = 'hVEqoxiPzKO3c9MkRGp4uSYI8FlNZB'; // Ganti dengan API key Anda
+const API_URL = 'https://virtusim.com/api/json.php';
 
-// Middleware untuk menghandle JSON request
-app.use(express.json());
-app.use(express.static(path.join(__dirname)));  // Menyajikan file statis seperti HTML, JS, CSS
+// Middleware untuk parsing JSON
+app.use(bodyParser.json());
 
-// Endpoint untuk membuat nomor virtual SIM
+// Serve Static Files (HTML, CSS, JS) dari root folder
+app.use(express.static(path.join(__dirname)));
+
+// Endpoint untuk membuat nomor Virtual SIM
 app.post('/create-sim', async (req, res) => {
     try {
-        // Menyusun data yang akan dikirim ke API sesuai dengan format PHP yang Anda berikan
         const postData = {
             api_key: API_KEY,
-            action: 'order',        // Aksi untuk membuat pesanan
-            service: '26',          // ID layanan (ganti dengan ID layanan yang sesuai)
-            operator: 'indosat'     // Operator untuk nomor virtual (ganti dengan yang diinginkan)
+            action: 'order',
+            service: '26',           // ID layanan (ganti dengan ID layanan yang sesuai)
+            operator: 'indosat'      // Operator untuk nomor virtual (ganti dengan yang diinginkan)
         };
 
-        // Mengirim request POST ke API
-        const response = await axios.post('https://virtusim.com/api/json.php', postData);
+        const response = await axios.post(API_URL, postData);
 
         console.log('API Response:', response.data);  // Debugging: Log response dari API
 
-        // Memeriksa respons untuk mendapatkan nomor
         if (response.data.status) {
-            res.status(200).json({
-                success: true,
-                number: response.data.data.number // Mengambil nomor dari response yang benar
-            });
+            const simNumber = response.data.data.number;
+            console.log('Sim Number:', simNumber);
+
+            if (simNumber) {
+                res.status(200).json({
+                    success: true,
+                    number: simNumber
+                });
+            } else {
+                res.status(400).json({
+                    success: false,
+                    message: 'No number returned from API.'
+                });
+            }
         } else {
             res.status(400).json({
                 success: false,
@@ -40,7 +51,8 @@ app.post('/create-sim', async (req, res) => {
             });
         }
     } catch (error) {
-        console.error('Error creating Virtual SIM:', error); // Debugging: Log error
+        console.error('Error creating Virtual SIM:', error);
+
         res.status(500).json({
             success: false,
             message: 'Failed to create SIM.',
@@ -49,23 +61,22 @@ app.post('/create-sim', async (req, res) => {
     }
 });
 
-// Endpoint untuk memeriksa SMS berdasarkan nomor virtual
+// Endpoint untuk memeriksa status SMS (jika diperlukan)
 app.get('/check-sms/:number', async (req, res) => {
-    const { number } = req.params;
-
     try {
+        const simNumber = req.params.number;
+
         const postData = {
             api_key: API_KEY,
-            action: 'active_order',  // Menggunakan action untuk aktivasi order
-            number: number           // Nomor yang perlu diperiksa
+            action: 'active_order',
+            number: simNumber
         };
 
-        // Mengirim request POST untuk memeriksa SMS
-        const response = await axios.post('https://virtusim.com/api/json.php', postData);
+        const response = await axios.post(API_URL, postData);
 
-        console.log('Check SMS Response:', response.data); // Debugging: Log response dari API
+        console.log('Check SMS Response:', response.data);
 
-        if (response.data.status && response.data.data.sms_received) {
+        if (response.data.status) {
             res.status(200).json({
                 smsReceived: true,
                 smsCode: response.data.data.sms_code
@@ -76,16 +87,16 @@ app.get('/check-sms/:number', async (req, res) => {
             });
         }
     } catch (error) {
-        console.error('Error checking SMS:', error); // Debugging: Log error
+        console.error('Error checking SMS:', error);
         res.status(500).json({
-            success: false,
+            smsReceived: false,
             message: 'Failed to check SMS.',
             error: error.response ? error.response.data : error.message
         });
     }
 });
 
-// Menjalankan server
+// Start the server
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });
