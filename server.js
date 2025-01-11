@@ -3,20 +3,31 @@ const axios = require('axios');
 const path = require('path');
 const app = express();
 const port = 8080;
+
+// API Key untuk layanan Virtual SIM
 const API_KEY = 'hVEqoxiPzKO3c9MkRGp4uSYI8FlNZB'; // Ganti dengan API Key yang diberikan
+
+// Middleware untuk menghandle JSON request
 app.use(express.json());
-app.use(express.static(path.join(__dirname)));
+app.use(express.static(path.join(__dirname)));  // Menyajikan file statis seperti HTML, JS, CSS
+
+// Endpoint untuk membuat nomor virtual SIM
 app.post('/create-sim', async (req, res) => {
     try {
-        // Ganti 'country' menjadi 'ID' untuk Indonesia
-        const response = await axios.post('https://virtusim.com/api/json.php', {
+        // Menyusun data yang akan dikirim ke API sesuai dengan format PHP yang Anda berikan
+        const postData = {
             api_key: API_KEY,
-            action: 'create_number',
-            country: 'ID' // Menggunakan kode negara Indonesia
-        });
+            action: 'order',        // Aksi untuk membuat pesanan
+            service: '26',          // ID layanan (ganti dengan ID layanan yang sesuai)
+            operator: 'indosat'     // Operator untuk nomor virtual (ganti dengan yang diinginkan)
+        };
+
+        // Mengirim request POST ke API
+        const response = await axios.post('https://virtusim.com/api/json.php', postData);
 
         console.log('API Response:', response.data);  // Debugging: Log response dari API
 
+        // Memeriksa respons untuk mendapatkan nomor
         if (response.data.status) {
             res.status(200).json({
                 success: true,
@@ -43,11 +54,14 @@ app.get('/check-sms/:number', async (req, res) => {
     const { number } = req.params;
 
     try {
-        const response = await axios.post('https://virtusim.com/api/json.php', {
+        const postData = {
             api_key: API_KEY,
-            action: 'check_sms',
-            number: number
-        });
+            action: 'active_order',  // Menggunakan action untuk aktivasi order
+            number: number           // Nomor yang perlu diperiksa
+        };
+
+        // Mengirim request POST untuk memeriksa SMS
+        const response = await axios.post('https://virtusim.com/api/json.php', postData);
 
         console.log('Check SMS Response:', response.data); // Debugging: Log response dari API
 
