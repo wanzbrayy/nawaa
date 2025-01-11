@@ -5,7 +5,7 @@ const app = express();
 const port = 8080;
 
 // API Key untuk layanan Virtual SIM
-const API_KEY = '8UAkynwz2f6ION1SVGCbBTFhMDajQr'; // Ganti dengan API Key yang valid
+const API_KEY = 'hVEqoxiPzKO3c9MkRGp4uSYI8FlNZB'; // Ganti dengan API Key yang valid
 
 // Middleware untuk meng-handle JSON dan file statis
 app.use(express.json());
