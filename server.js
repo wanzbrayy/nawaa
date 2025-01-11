@@ -20,10 +20,12 @@ app.post('/create-sim', async (req, res) => {
             country: 'US'
         });
 
+        console.log('API Response:', response.data);  // Debugging: Log response dari API
+
         if (response.data.success) {
             res.status(200).json({
                 success: true,
-                number: response.data.number
+                number: response.data.number // Pastikan number ada di dalam response
             });
         } else {
             res.status(400).json({
@@ -32,6 +34,7 @@ app.post('/create-sim', async (req, res) => {
             });
         }
     } catch (error) {
+        console.error('Error creating Virtual SIM:', error); // Debugging: Log error
         res.status(500).json({
             success: false,
             message: 'Failed to create SIM.',
@@ -51,6 +54,8 @@ app.get('/check-sms/:number', async (req, res) => {
             number: number
         });
 
+        console.log('Check SMS Response:', response.data); // Debugging: Log response dari API
+
         if (response.data.success && response.data.sms_received) {
             res.status(200).json({
                 smsReceived: true,
@@ -62,6 +67,7 @@ app.get('/check-sms/:number', async (req, res) => {
             });
         }
     } catch (error) {
+        console.error('Error checking SMS:', error); // Debugging: Log error
         res.status(500).json({
             success: false,
             message: 'Failed to check SMS.',
@@ -74,4 +80,3 @@ app.get('/check-sms/:number', async (req, res) => {
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });
-            
