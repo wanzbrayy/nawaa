@@ -66,23 +66,6 @@ app.post('/api/virtualsim/sendSMS', async (req, res) => {
         });
     }
 });
-app.post('/check-sms/:number', (req, res) => {
-    const { number } = req.params;
-
-    // Simulasikan status SMS diterima
-    setTimeout(() => {
-        const smsCode = Math.floor(100000 + Math.random() * 900000);
-        res.json({ smsReceived: true, smsCode });
-    }, 5000);app.post('/check-sms/:number', (req, res) => {
-    const { number } = req.params;
-
-    // Simulasikan status SMS diterima
-    setTimeout(() => {
-        const smsCode = Math.floor(100000 + Math.random() * 900000);
-        res.json({ smsReceived: true, smsCode });
-    }, 5000);
-});
-// Jalankan server
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });
